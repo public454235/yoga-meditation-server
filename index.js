@@ -31,6 +31,7 @@ async function run() {
 
         const classCollection = client.db("yogaDb").collection("class");
         const instructorsCollection = client.db("yogaDb").collection("instructors");
+        const cartsCollection = client.db("yogaDb").collection("carts");
 
 
 // class user
@@ -46,6 +47,15 @@ async function run() {
             const result=await instructorsCollection.find().toArray()
             res.send(result)
         })
+
+
+// cart collation
+app.post('/carts', async(req, res)=>{
+    const item = req.body;
+    console.log(item)
+    const result= await cartsCollection.insertOne(item)
+    res.send(result)
+})
 
 
 
