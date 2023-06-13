@@ -10,7 +10,7 @@ app.use(cors())
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vl0tdp1.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -34,28 +34,45 @@ async function run() {
         const cartsCollection = client.db("yogaDb").collection("carts");
 
 
-// class user
+        // class user
 
-        app.get('/class', async(req, res)=>{
-            const result=await classCollection.find().toArray()
+        app.get('/class', async (req, res) => {
+            const result = await classCollection.find().toArray()
             res.send(result)
         })
 
 
-// instructors user        
-        app.get('/instructors', async(req, res)=>{
-            const result=await instructorsCollection.find().toArray()
+        // instructors user        
+        app.get('/instructors', async (req, res) => {
+            const result = await instructorsCollection.find().toArray()
             res.send(result)
         })
 
 
-// cart collation
-app.post('/carts', async(req, res)=>{
-    const item = req.body;
-    console.log(item)
-    const result= await cartsCollection.insertOne(item)
-    res.send(result)
-})
+        // cart collation
+        app.get('/carts', async (req, res) => {
+            const email = req.query.email;
+            console.log(email)
+            if (!email) {
+                res.send([])
+            }
+            const query = { email: email };
+            const result = await cartsCollection.find(query).toArray();
+            res.send(result)
+        })
+        app.post('/carts', async (req, res) => {
+            const item = req.body;
+            console.log(item)
+            const result = await cartsCollection.insertOne(item)
+            res.send(result)
+        })
+
+        app.delete('/carts/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await cartsCollection.deleteOne(query);
+            res.send(result)
+        })
 
 
 
