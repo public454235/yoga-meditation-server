@@ -29,12 +29,21 @@ async function run() {
 
 
 
+        const usersCollection = client.db("yogaDb").collection("users");
         const classCollection = client.db("yogaDb").collection("class");
         const instructorsCollection = client.db("yogaDb").collection("instructors");
         const cartsCollection = client.db("yogaDb").collection("carts");
 
 
-        // class user
+        // users api
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const result = await usersCollection.insertOne(user)
+            res.send(result)
+        })
+
+
+        // class api
 
         app.get('/class', async (req, res) => {
             const result = await classCollection.find().toArray()
@@ -42,7 +51,7 @@ async function run() {
         })
 
 
-        // instructors user        
+        // instructors api        
         app.get('/instructors', async (req, res) => {
             const result = await instructorsCollection.find().toArray()
             res.send(result)
@@ -62,7 +71,6 @@ async function run() {
         })
         app.post('/carts', async (req, res) => {
             const item = req.body;
-            console.log(item)
             const result = await cartsCollection.insertOne(item)
             res.send(result)
         })
