@@ -18,7 +18,7 @@ const verifyJWT = (req, res, next) => {
         return res.status(401).send(({ error: true, message: "Unauthorized access" }))
     }
 
-    
+
     const token = authorization.split(' ')[1]
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
         if (error) {
@@ -45,6 +45,8 @@ const client = new MongoClient(uri, {
     }
 });
 
+
+
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -57,7 +59,7 @@ async function run() {
         const instructorsCollection = client.db("yogaDb").collection("instructors");
         const cartsCollection = client.db("yogaDb").collection("carts");
 
-// jwt token
+        // jwt token
         app.post('/jwt', async (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
@@ -66,27 +68,126 @@ async function run() {
         })
 
 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: "forbidden message" })
+            }
+            next()
+        }
+        const verifyInstructor = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            if (user?.role !== 'class') {
+                return res.status(403).send({ error: true, message: "forbidden message" })
+            }
+            next()
+        }
+
+
+
+
+        // class api
+        app.get('/instructors', async (req, res) => {
+            const result = await instructorsCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/class/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await classCollection.findOne(query)
+            res.send(result)
+        })
+
+
+        app.post('/class', async (req, res) => {
+            const newClass = req.body;
+            const result = await classCollection.insertOne(newClass)
+            res.send(result)
+        })
+        // 
+        app.get('/class', async (req, res) => {
+            const result = await classCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/users', async (req, res) => {
+            const result = await usersCollection.find().toArray()
+            res.send(result)
+        })
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+
+            res.send(user)
+        })
+
+        // security All
+
+
 
         // users api
 
+
+        //instructor
+        app.get('/users/class/:email', verifyJWT, verifyInstructor, async (req, res) => {
+            const email = req.params.email;
+            if (req.decoded.email !== email) {
+                return send({ class: false })
+            }
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const result = { class: user?.role == "class" }
+            res.send(result)
+        })
+        app.get('/users/student/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (req.decoded.email !== email) {
+                return send({ student: false })
+            }
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const result = { instructor: user?.role == "student" }
+            res.send(result)
+        })
+
+        app.patch('/users/class/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'class'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
+
+
+
         // student
-        app.get('/users/instructor/:email', verifyJWT, async (req, res) => {
+        app.get('/users/class/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (req.decoded.email !== email) {
                 return send({ instructor: false })
             }
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            const result = { instructor: user?.role == "instructor" }
+            const result = { instructor: user?.role == "class" }
             res.send(result)
         })
 
-        app.patch('/users/instructor/:id', async (req, res) => {
+        app.patch('/users/class/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                    role: 'instructor'
+                    role: 'class'
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
@@ -108,20 +209,7 @@ async function run() {
 
 
 
-        // class api
-
-        app.get('/class', async (req, res) => {
-            const result = await classCollection.find().toArray()
-            res.send(result)
-        })
-
-
-        // instructors api        
-        app.get('/instructors', async (req, res) => {
-            const result = await instructorsCollection.find().toArray()
-            res.send(result)
-        })
-
+       
 
         // cart collation
         app.get('/carts', async (req, res) => {
@@ -142,7 +230,7 @@ async function run() {
 
         app.delete('/carts/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await cartsCollection.deleteOne(query);
             res.send(result)
         })
