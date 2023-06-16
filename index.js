@@ -50,7 +50,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        client.connect();
 
 
 
@@ -81,7 +81,7 @@ async function run() {
             const email = req.decoded.email;
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            if (user?.role !== 'class') {
+            if (user?.role !== 'instructors') {
                 return res.status(403).send({ error: true, message: "forbidden message" })
             }
             next()
@@ -129,7 +129,7 @@ async function run() {
 
         // security All
 
-        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+        app.get('/users/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
             if (req.decoded.email !== email) {
                 return send({ admin: false })
@@ -137,6 +137,7 @@ async function run() {
             const query = { email: email }
             const user = await usersCollection.findOne(query)
             const result = { admin: user?.role === "admin" }
+            console.log(result)
             res.send(result)
         })
 
