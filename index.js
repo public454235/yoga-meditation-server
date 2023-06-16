@@ -129,20 +129,42 @@ async function run() {
 
         // security All
 
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            if (req.decoded.email !== email) {
+                return send({ admin: false })
+            }
+            const query = { email: email }
+            const user = await usersCollection.findOne(query)
+            const result = { admin: user?.role === "admin" }
+            res.send(result)
+        })
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
 
 
         // users api
 
 
         //instructor
-        app.get('/users/class/:email', verifyJWT, verifyInstructor, async (req, res) => {
+        app.get('/users/instructors/:email', verifyJWT, verifyInstructor, async (req, res) => {
             const email = req.params.email;
             if (req.decoded.email !== email) {
-                return send({ class: false })
+                return send({ instructors: false })
             }
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            const result = { class: user?.role == "class" }
+            const result = { instructors: user?.role == "instructors" }
             res.send(result)
         })
         app.get('/users/student/:email', verifyJWT, async (req, res) => {
@@ -152,16 +174,16 @@ async function run() {
             }
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            const result = { instructor: user?.role == "student" }
+            const result = { instructors: user?.role == "student" }
             res.send(result)
         })
 
-        app.patch('/users/class/:id', async (req, res) => {
+        app.patch('/users/instructors/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                    role: 'class'
+                    role: 'instructors'
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
@@ -171,23 +193,23 @@ async function run() {
 
 
         // student
-        app.get('/users/class/:email', verifyJWT, async (req, res) => {
+        app.get('/users/instructors/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
             if (req.decoded.email !== email) {
-                return send({ instructor: false })
+                return send({ instructors: false })
             }
             const query = { email: email }
             const user = await usersCollection.findOne(query)
-            const result = { instructor: user?.role == "class" }
+            const result = { instructors: user?.role == "instructors" }
             res.send(result)
         })
 
-        app.patch('/users/class/:id', async (req, res) => {
+        app.patch('/users/instructors/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                    role: 'class'
+                    role: 'instructors'
                 }
             }
             const result = await usersCollection.updateOne(filter, updateDoc)
@@ -209,7 +231,7 @@ async function run() {
 
 
 
-       
+
 
         // cart collation
         app.get('/carts', async (req, res) => {
